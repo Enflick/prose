@@ -136,14 +136,13 @@ func NewDocument(text string, opts ...DocOpt) (*Document, error) {
 		doc.tokens = append(doc.tokens, tokenizer.tokenize(text)...)
 	}
 	if base.Tag || base.Extract {
-		if base.Concurrency == false {
+		if !base.Concurrency {
 			doc.tokens = doc.Model.tagger.tag(doc.tokens)
 		} else {
 			inpChannel := make(chan *Token, maxQueue)
 			go func() {
 				for _, t := range doc.tokens {
-					tk := t
-					inpChannel <- tk
+					inpChannel <- t
 				}
 				close(inpChannel)
 			}()
