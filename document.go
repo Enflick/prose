@@ -159,11 +159,6 @@ func NewDocument(text string, opts ...DocOpt) (*Document, error) {
 			})
 
 			base.wp.StopWait()
-
-			// fmt.Println("New doc.tokens")
-			// for _, l := range doc.tokens {
-			// 	fmt.Println(l.Text, "   ", l.Tag)
-			// }
 		}
 
 	}
