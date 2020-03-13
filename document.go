@@ -1,5 +1,11 @@
 package prose
 
+import (
+	"runtime"
+
+	"github.com/gammazero/workerpool"
+)
+
 // A DocOpt represents a setting that changes the document creation process.
 //
 // For example, it might disable named-entity extraction:
@@ -7,12 +13,16 @@ package prose
 //    doc := prose.NewDocument("...", prose.WithExtraction(false))
 type DocOpt func(doc *Document, opts *DocOpts)
 
+const maxQueue = 20
+
 // DocOpts controls the Document creation process:
 type DocOpts struct {
-	Extract  bool // If true, include named-entity extraction
-	Segment  bool // If true, include segmentation
-	Tag      bool // If true, include POS tagging
-	Tokenize bool // If true, include tokenization
+	Extract     bool                   // If true, include named-entity extraction
+	Segment     bool                   // If true, include segmentation
+	Tag         bool                   // If true, include POS tagging
+	Tokenize    bool                   // If true, include tokenization
+	Concurrency bool                   // If true, include concurrency
+	wp          *workerpool.WorkerPool // worker pool
 }
 
 // WithTokenization can enable (the default) or disable tokenization.
@@ -34,6 +44,17 @@ func WithTagging(include bool) DocOpt {
 func WithSegmentation(include bool) DocOpt {
 	return func(doc *Document, opts *DocOpts) {
 		opts.Segment = include
+	}
+}
+
+// WithConcurrency can enable (the default) or disable sentence segmentation.
+func WithConcurrency(include bool) DocOpt {
+	return func(doc *Document, opts *DocOpts) {
+		opts.Concurrency = include
+		if opts.Concurrency {
+			maxWorkers := runtime.NumCPU()
+			opts.wp = workerpool.New(maxWorkers)
+		}
 	}
 }
 
@@ -115,7 +136,30 @@ func NewDocument(text string, opts ...DocOpt) (*Document, error) {
 		doc.tokens = append(doc.tokens, tokenizer.tokenize(text)...)
 	}
 	if base.Tag || base.Extract {
-		doc.tokens = doc.Model.tagger.tag(doc.tokens)
+		if !base.Concurrency {
+			doc.tokens = doc.Model.tagger.tag(doc.tokens)
+		} else {
+			inpChannel := make(chan *Token, maxQueue)
+			go func() {
+				for _, t := range doc.tokens {
+					inpChannel <- t
+				}
+				close(inpChannel)
+			}()
+
+			base.wp.Submit(func() {
+				for {
+					tk, ok := <-inpChannel
+					if !ok {
+						return
+					}
+					doc.Model.tagger.tag([]*Token{tk})
+				}
+			})
+
+			base.wp.StopWait()
+		}
+
 	}
 	if base.Extract {
 		doc.tokens = doc.Model.extracter.classify(doc.tokens)
