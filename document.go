@@ -1,6 +1,7 @@
 package prose
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -13,6 +14,8 @@ import (
 //
 //    doc := prose.NewDocument("...", prose.WithExtraction(false))
 type DocOpt func(doc *Document, opts *DocOpts)
+
+const maxQueue = 100
 
 // DocOpts controls the Document creation process:
 type DocOpts struct {
@@ -138,7 +141,10 @@ func NewDocument(text string, opts ...DocOpt) (*Document, error) {
 		if base.Concurrency == false {
 			doc.tokens = doc.Model.tagger.tag(doc.tokens)
 		} else {
-			inpChannel := make(chan *Token, 20)
+			if len(doc.tokens) > maxQueue {
+				return nil, errors.New("length of tokens more than maxQueue length")
+			}
+			inpChannel := make(chan *Token, maxQueue)
 			for _, t := range doc.tokens {
 				tk := t
 				inpChannel <- tk
