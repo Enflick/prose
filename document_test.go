@@ -15,3 +15,11 @@ func BenchmarkDoc(b *testing.B) {
 		}
 	}
 }
+
+func TestConcurrentDocumentTag(t *testing.T) {
+	text := string("they'll won't go if they are not bad")
+	_, err := NewDocument(text, WithExtraction(false), WithConcurrency(true))
+	if err != nil {
+		panic(err)
+	}
+}
