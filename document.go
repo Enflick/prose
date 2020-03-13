@@ -1,8 +1,6 @@
 package prose
 
 import (
-	"errors"
-	"fmt"
 	"runtime"
 
 	"github.com/gammazero/workerpool"
@@ -141,9 +139,6 @@ func NewDocument(text string, opts ...DocOpt) (*Document, error) {
 		if base.Concurrency == false {
 			doc.tokens = doc.Model.tagger.tag(doc.tokens)
 		} else {
-			if len(doc.tokens) > maxQueue {
-				return nil, errors.New("length of tokens more than maxQueue length")
-			}
 			inpChannel := make(chan *Token, maxQueue)
 			go func() {
 				for _, t := range doc.tokens {
@@ -165,10 +160,10 @@ func NewDocument(text string, opts ...DocOpt) (*Document, error) {
 
 			base.wp.StopWait()
 
-			fmt.Println("New doc.tokens")
-			for _, l := range doc.tokens {
-				fmt.Println(l.Text, "   ", l.Tag)
-			}
+			// fmt.Println("New doc.tokens")
+			// for _, l := range doc.tokens {
+			// 	fmt.Println(l.Text, "   ", l.Tag)
+			// }
 		}
 
 	}
