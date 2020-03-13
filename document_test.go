@@ -18,9 +18,14 @@ func BenchmarkDoc(b *testing.B) {
 
 func TestConcurrentDocumentTag(t *testing.T) {
 	text := string("Mary had a little lamb Mary had a little lamb Mary had a little lamb")
-	_, err := NewDocument(text, WithExtraction(false), WithConcurrency(true))
+	doc, err := NewDocument(text, WithExtraction(false), WithConcurrency(true))
 	if err != nil {
 		panic(err)
+	}
+	for _, i := range doc.tokens {
+		if i.Tag == "" {
+			panic("tag not done")
+		}
 	}
 }
 
