@@ -35,6 +35,7 @@ setup:
 	go get -u github.com/deckarep/golang-set
 	go get -u github.com/mingrammer/commonregex
 	go get -u gonum.org/v1/gonum/mat
+	go get -u github.com/gammazero/workerpool
 
 model:
 	go-bindata -ignore=\\.DS_Store -pkg="prose" -o data.go model/**/*.gob
